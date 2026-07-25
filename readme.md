@@ -1,0 +1,1 @@
+Repository for Embedded development projects (homeworks) using ESP32.
