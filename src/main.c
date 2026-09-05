@@ -14,9 +14,9 @@ static bool fan_on = true;
 #define ON_DURATION_US 5ULL * 1000000
 
 TimerVariant timer;
-bool callback_triggered = false;
+volatile bool callback_triggered = false;
 
-static void timer_callback(void *arg)
+static void IRAM_ATTR timer_callback(void *arg)
 {
     callback_triggered = true;
 }
