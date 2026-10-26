@@ -3,7 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
-#include "i2c_connection.h"
+#include "spi_connection.h"
 
 static const char *TAG = "BAROMETER";
 
@@ -27,18 +27,18 @@ typedef struct {
     int16_t p2, p3, p4, p5, p6, p7, p8, p9;
 } calibration_t;
 
-static i2c_device_t s_dev;
+static spi_device_t s_dev;
 static calibration_t s_calib;
 
 static uint16_t u16_le(const uint8_t *b) { return (uint16_t) (b[0] | (b[1] << 8)); }
 
 static esp_err_t write_byte(uint8_t reg, uint8_t value) {
-    return i2c_connection_write_reg(s_dev, reg, &value, 1);
+    return spi_connection_write_reg(s_dev, reg, &value, 1);
 }
 
 static esp_err_t load_calibration(void) {
     uint8_t b[24];
-    esp_err_t err = i2c_connection_read_reg(s_dev, REG_CALIB, b, sizeof(b));
+    esp_err_t err = spi_connection_read_reg(s_dev, REG_CALIB, b, sizeof(b));
     if (err != ESP_OK) {
         return err;
     }
@@ -59,14 +59,14 @@ static esp_err_t load_calibration(void) {
     return ESP_OK;
 }
 
-esp_err_t barometer_init(void) {
-    esp_err_t err = i2c_connection_add_device(BAROMETER_I2C_ADDRESS, 400000, &s_dev);
+esp_err_t barometer_init(gpio_num_t cs) {
+    esp_err_t err = spi_connection_add_device(cs, BAROMETER_SPI_SPEED_HZ, &s_dev);
     if (err != ESP_OK) {
         return err;
     }
 
     uint8_t chip_id = 0;
-    err = i2c_connection_read_reg(s_dev, REG_CHIP_ID, &chip_id, 1);
+    err = spi_connection_read_reg(s_dev, REG_CHIP_ID, &chip_id, 1);
     if (err != ESP_OK) {
         return err;
     }
@@ -120,7 +120,7 @@ static uint32_t compensate_pressure(int32_t adc_p, int32_t t_fine) {
 esp_err_t barometer_read(barometer_data_t *out) {
     // Burst read keeps pressure and temperature from the same sample
     uint8_t raw[6];
-    esp_err_t err = i2c_connection_read_reg(s_dev, REG_DATA, raw, sizeof(raw));
+    esp_err_t err = spi_connection_read_reg(s_dev, REG_DATA, raw, sizeof(raw));
     if (err != ESP_OK) {
         return err;
     }

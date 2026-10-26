@@ -4,6 +4,7 @@
 #include "esp_log.h"
 
 #include "i2c_connection.h"
+#include "spi_connection.h"
 #include "driver/barometer.h"
 #include "driver/display.h"
 
@@ -12,14 +13,19 @@ static const char *TAG = "MAIN";
 #define I2C_SDA GPIO_NUM_8
 #define I2C_SCL GPIO_NUM_9
 
+#define SPI_SCLK GPIO_NUM_5
+#define SPI_MOSI GPIO_NUM_6
+#define SPI_MISO GPIO_NUM_7
+#define BARO_CS  GPIO_NUM_4
+
 #define POLL_PERIOD_MS 500
 
-void app_main(void)
-{
+void app_main(void) {
     ESP_ERROR_CHECK(i2c_connection_init(I2C_SDA, I2C_SCL));
+    ESP_ERROR_CHECK(spi_connection_init(SPI_SCLK, SPI_MOSI, SPI_MISO));
     ESP_ERROR_CHECK(display_init());
 
-    esp_err_t baro_err = barometer_init();
+    esp_err_t baro_err = barometer_init(BARO_CS);
     if (baro_err != ESP_OK) {
         ESP_LOGE(TAG, "Barometer init failed: %s", esp_err_to_name(baro_err));
         display_clear();
